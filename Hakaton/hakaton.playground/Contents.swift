@@ -16,11 +16,11 @@ protocol UserData {
 enum UserActions {
     case showUserCardBalance // Проверка баланса карты
     case showUserDepositBalance // Проверка баланса банковского депозита
-    case getCashFromCard // Снять наличные с карты
-    case getCashFromDeposit // Снять наличные с банковского депозита
-    case putCashCard // Пополнение карты наличными
-    case putCashDeposit // Пополнение банковского депозита наличными
-    case topUpMobilePhone // пополнение телефона
+    case getCashFromCard (cash: Float) // Снять наличные с карты
+    case getCashFromDeposit (cash: Float) // Снять наличные с банковского депозита
+    case putCashCard (cash: Float) // Пополнение карты наличными
+    case putCashDeposit (cash: Float) // Пополнение банковского депозита наличными
+    case topUpMobilePhone (pay: Float, method: PaymentMethod) // пополнение телефона
 }
 
 // Виды операций, выбранных пользователем (подтверждение выбора)
@@ -72,7 +72,7 @@ protocol BankApi {
     mutating func topUpPhoneBalanceCash(pay: Float)
     mutating func topUpPhoneBalanceCard(pay: Float)
     mutating func topUpPhoneBalanceDeposit(pay: Float)
-    mutating func getCashFromDeposit(cash: Float)
+    func getCashFromDeposit(cash: Float)
     mutating func getCashFromCard(cash: Float)
     mutating func putCashDeposit(topUp: Float)
     mutating func putCashCard(topUp: Float)
@@ -93,7 +93,7 @@ class ATM {
   }
  
  
-    public final func sendUserDataToBank(actions: UserActions, payment: PaymentMethod? = nil, amountOfMoney: Float? = nil) {
+    public final func sendUserDataToBank(actions: UserActions, payment: PaymentMethod? = nil) {
         
         if someBank.checkCurrentUser(userCardId: userCardId, userCardPin: userCardPin) {
             switch actions {
@@ -106,43 +106,38 @@ class ATM {
                 print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.showUserDepositBalance.rawValue).")
                 someBank.showUserDepositBalance()
                 
-            case .getCashFromCard:
-                print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.getCashFromCard.rawValue) в размере \(amountOfMoney ?? 0) рублей.")
-                someBank.getCashFromCard(cash: amountOfMoney ?? 0)
+            case .getCashFromCard(cash: let cash):
+                print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.getCashFromCard.rawValue) в размере \(cash) рублей.")
+                someBank.getCashFromCard(cash: cash)
                 
-            case .getCashFromDeposit:
-                print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.getCashFromDeposit.rawValue) в размере \(amountOfMoney ?? 0) рублей.")
-                someBank.getCashFromDeposit(cash: amountOfMoney ?? 0)
+            case .getCashFromDeposit(cash: let cash):
+                print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.getCashFromDeposit.rawValue) в размере \(cash) рублей.")
+                someBank.getCashFromDeposit(cash: cash)
                 
-            case .putCashCard:
-                print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.putCashCard.rawValue) на \(amountOfMoney ?? 0) рублей.")
-                someBank.putCashCard(topUp: amountOfMoney ?? 0)
+            case .putCashCard(cash: let cash):
+                print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.putCashCard.rawValue) на \(cash) рублей.")
+                someBank.putCashCard(topUp: cash)
                 
-            case .putCashDeposit:
-                print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.putCashDeposit.rawValue) на \(amountOfMoney ?? 0) рублей.")
-                someBank.putCashDeposit(topUp: amountOfMoney ?? 0)
+            case .putCashDeposit(cash: let cash):
+                print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.putCashDeposit.rawValue) на \(cash) рублей.")
+                someBank.putCashDeposit(topUp: cash)
                 
-            case .topUpMobilePhone:
-                switch payment {
+            case .topUpMobilePhone(pay: let pay, method: let method):
+                switch method {
                 case .byCard:
-                    print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.topUpMobilePhoneByCard.rawValue) на \(amountOfMoney ?? 0) рублей.")
-                    someBank.topUpPhoneBalanceCard(pay: amountOfMoney ?? 0)
+                    print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.topUpMobilePhoneByCard.rawValue) на \(pay) рублей.")
+                    someBank.topUpPhoneBalanceCard(pay: pay)
                     
                 case .byDeposit:
-                    print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.topUpMobilePhoneByDeposit.rawValue) на \(amountOfMoney ?? 0) рублей.")
-                    someBank.topUpPhoneBalanceDeposit(pay: amountOfMoney ?? 0)
+                    print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.topUpMobilePhoneByDeposit.rawValue) на \(pay) рублей.")
+                    someBank.topUpPhoneBalanceDeposit(pay: pay)
                     
                 case .byCash:
-                    print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.topUpMobilePhoneByCash.rawValue) на \(amountOfMoney ?? 0) рублей.")
-                    someBank.topUpPhoneBalanceCash(pay: amountOfMoney ?? 0)
-                    
-                case .none:
-                    print("Не выбран способ оплаты")
-                }
-            }
+                    print("Вы выбрали операцию: \(DescriptionTypesAvailableOperations.topUpMobilePhoneByCash.rawValue) на \(pay) рублей.")
+                    someBank.topUpPhoneBalanceCash(pay: pay)
+                    }
         }
-}
-}
+        }}}
  
 
 
@@ -414,19 +409,19 @@ someATM.sendUserDataToBank(actions: .showUserCardBalance)
 print("------------------------")
 someATM.sendUserDataToBank(actions: .showUserDepositBalance)
 print("------------------------")
-someATM.sendUserDataToBank(actions: .getCashFromCard, amountOfMoney: 34.5)
+someATM.sendUserDataToBank(actions: .getCashFromCard(cash: 100))
 print("------------------------")
-someATM.sendUserDataToBank(actions: .getCashFromDeposit, amountOfMoney: 456)
+someATM.sendUserDataToBank(actions: .getCashFromDeposit(cash: 200))
 print("------------------------")
-someATM.sendUserDataToBank(actions: .putCashCard, amountOfMoney: 200)
+someATM.sendUserDataToBank(actions: .putCashCard(cash: 120))
 print("------------------------")
-someATM.sendUserDataToBank(actions: .putCashDeposit, amountOfMoney: 231)
+someATM.sendUserDataToBank(actions: .putCashDeposit(cash: 21000))
 print("------------------------")
-someATM.sendUserDataToBank(actions: .topUpMobilePhone, payment: .byDeposit, amountOfMoney: 12)
+someATM.sendUserDataToBank(actions: .topUpMobilePhone(pay: 12, method: .byDeposit))
 print("------------------------")
-someATM.sendUserDataToBank(actions: .topUpMobilePhone, payment: .byCard, amountOfMoney: 13)
+someATM.sendUserDataToBank(actions: .topUpMobilePhone(pay: 13, method: .byCard))
 print("------------------------")
-someATM.sendUserDataToBank(actions: .topUpMobilePhone, payment: .byCash, amountOfMoney: 34.5)
+someATM.sendUserDataToBank(actions: .topUpMobilePhone(pay: 14, method: .byCash))
 print("------------------------")
 someATM.sendUserDataToBank(actions: .showUserCardBalance)
 print("------------------------")
